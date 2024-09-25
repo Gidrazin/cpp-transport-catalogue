@@ -9,19 +9,9 @@
 #include <unordered_set>
 #include <vector>
 
-class TransportCatalogue {
-	//Хэшер string_view через хэш string
-	struct StringViewHash {
-		std::size_t operator()(std::string_view sv) const {
-			return std::hash<std::string>()(std::string(sv));
-		}
-	};
+#include "geo.h"
 
-	struct StringViewEqual {
-		bool operator()(std::string_view lhs, std::string_view rhs) const {
-			return lhs == rhs;
-		}
-	};
+class TransportCatalogue {
 
 	//Хэшер пары string_view через хэш конкатенации string
 	struct PairHash {
@@ -37,11 +27,10 @@ class TransportCatalogue {
 			return lhs == rhs;
 		}
 	};
-	
+
 	struct Stop{
 		std::string_view name;
-		double latitude = 0.0;
-		double longitude = 0.0;
+		geo::Coordinates coordinates;
 		std::set<std::string_view> buses;
 	};
 
@@ -52,11 +41,10 @@ class TransportCatalogue {
 	};
 
 public:
-	void AddStop(const std::string& stop_name, const double latitude, const double longitude);
-	void AddBus(const std::string& bus_name, const std::vector<std::string>& stop_names);
-	std::tuple<size_t, size_t, double> GetBusInfo(const std::string& bus_name) const;
-	std::set<std::string_view> GetStopInfo(const Stop& stop) const;
-	const Stop* FindStop(const std::string& stop_name) const;
+	void AddStop(const Stop& stop);
+	void AddBus(const Bus& bus);
+	std::tuple<size_t, size_t, double> GetBusInfo(const std::string_view& bus_name) const;
+	const Stop* FindStop(const std::string_view& stop_name) const;
 
 private:
 	//Сохраняем сет индексов маршрутов и автобусов.
@@ -64,8 +52,8 @@ private:
 	//в качестве ключей к хеш таблицам
 	std::unordered_set<std::string> stops_index_list_;
 	std::unordered_set<std::string> buses_index_list_;
-	std::unordered_map<std::string_view, Stop, StringViewHash, StringViewEqual> stops_;
-	std::unordered_map<std::string_view, Bus, StringViewHash, StringViewEqual> buses_;
+	std::unordered_map<std::string_view, Stop> stops_;
+	std::unordered_map<std::string_view, Bus> buses_;
 	//Кэш расстояний между остановками
 	std::unordered_map<std::pair<std::string_view, std::string_view>, double, PairHash, PairEqual> route_lengths_;
 

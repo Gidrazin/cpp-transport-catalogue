@@ -18,20 +18,20 @@ void ParseAndPrintStat(const TransportCatalogue& transport_catalogue, std::strin
         output << unique_stops_count << " unique stops, "s << std::setprecision(6) << route_length << " route length\n"s;
     }
     else if (request[0] == 'S') {
-        std::string stop_name(request.substr(5));
+        std::string_view stop_name(request.substr(5));
         auto stop = transport_catalogue.FindStop(stop_name);
         output << "Stop "s << stop_name << ": "s;
         if (stop == nullptr) {
             output << "not found\n"s;
             return;
         }
-        std::set<std::string_view> bus_list = transport_catalogue.GetStopInfo(*stop);
-        if (bus_list.empty()) {
+        if (stop->buses.empty()) {
             output << "no buses"s;
         }
         else {
-            for (const std::string_view& bus_name : bus_list) {
-                output << bus_name << ' ';
+            output << "buses"s;
+            for (const std::string_view& bus_name : stop->buses) {
+                output << ' ' << bus_name;
             }
         }
         output << '\n';

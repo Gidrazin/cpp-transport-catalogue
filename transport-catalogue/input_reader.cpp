@@ -9,7 +9,7 @@ using namespace std::string_literals;
 /**
  * Парсит строку вида "10.123,  -30.1837" и возвращает пару координат (широта, долгота)
  */
-Coordinates ParseCoordinates(std::string_view str) {
+geo::Coordinates ParseCoordinates(std::string_view str) {
     static const double nan = std::nan("");
 
     auto not_space = str.find_first_not_of(' ');
@@ -112,14 +112,9 @@ void InputReader::ParseLine(std::string_view line) {
 void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) const {
     for (const auto& command : commands_) {
         if (command.command == "Stop"s) {
-            Coordinates coordinates = ParseCoordinates(command.description);
-            catalogue.AddStop(command.id, coordinates.lat, coordinates.lng);
+            catalogue.AddStop({command.id, ParseCoordinates(command.description), {}});
         } else {
-            std::vector<std::string> stops;
-            for (std::string_view& stop : ParseRoute(command.description)) {
-                stops.push_back(std::string(stop));
-            }
-            catalogue.AddBus(command.id, stops);
+            catalogue.AddBus({command.id, ParseRoute(command.description)});
         }
     }
 }
