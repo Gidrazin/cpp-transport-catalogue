@@ -29,31 +29,36 @@ class TransportCatalogue {
 	};
 
 	struct Stop{
-		std::string_view name;
+		std::string name;
 		geo::Coordinates coordinates;
-		std::set<std::string_view> buses;
 	};
 
 	struct Bus {
-		std::string_view name;
+		std::string name;
 		std::vector<std::string_view> stops;
+		double route_length = 0;
+	};
+
+	struct BusInfo{
+		size_t stops_on_route = 0;
+		size_t unique_stops = 0;
 		double route_length = 0;
 	};
 
 public:
 	void AddStop(const Stop& stop);
 	void AddBus(const Bus& bus);
-	std::tuple<size_t, size_t, double> GetBusInfo(const std::string_view& bus_name) const;
-	const Stop* FindStop(const std::string_view& stop_name) const;
+	BusInfo GetBusInfo(const std::string_view bus_name) const;
+	const Stop* FindStop(const std::string_view stop_name) const;
+	std::set<std::string_view> GetBusesOnStop(const std::string_view stop_name) const;
 
 private:
-	//Сохраняем сет индексов маршрутов и автобусов.
-	//Далее будем использовать легковесные string_view
-	//в качестве ключей к хеш таблицам
-	std::unordered_set<std::string> stops_index_list_;
-	std::unordered_set<std::string> buses_index_list_;
-	std::unordered_map<std::string_view, Stop> stops_;
-	std::unordered_map<std::string_view, Bus> buses_;
+
+	std::forward_list<Stop> stops_index_list_;
+	std::forward_list<Bus> buses_index_list_;
+	std::unordered_map<std::string_view, const Stop*> stops_;
+	std::unordered_map<std::string_view, const Bus*> buses_;
+	std::unordered_map<std::string_view, std::set<std::string_view>> buses_on_stop_;
 	//Кэш расстояний между остановками
 	std::unordered_map<std::pair<std::string_view, std::string_view>, double, PairHash, PairEqual> route_lengths_;
 

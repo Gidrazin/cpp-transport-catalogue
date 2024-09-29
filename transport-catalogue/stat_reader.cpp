@@ -25,12 +25,13 @@ void ParseAndPrintStat(const TransportCatalogue& transport_catalogue, std::strin
             output << "not found\n"s;
             return;
         }
-        if (stop->buses.empty()) {
+        auto buses_on_stop = transport_catalogue.GetBusesOnStop(stop_name);
+        if (buses_on_stop.empty()) {
             output << "no buses"s;
         }
         else {
             output << "buses"s;
-            for (const std::string_view& bus_name : stop->buses) {
+            for (const std::string_view bus_name : buses_on_stop) {
                 output << ' ' << bus_name;
             }
         }
