@@ -14,12 +14,26 @@ void TransportCatalogue::AddBus(const Bus& bus) {
 	for (const std::string_view stop_name : bus.stops) {
 		sv_stop_names.push_back(stops_[stop_name]->name);
 	}
-	double route_length = ComputeRouteDistance(sv_stop_names);
+	int route_length = ComputeRouteDistance(sv_stop_names);
 	buses_index_list_.push_front({bus.name, move(sv_stop_names), route_length});
 	buses_[buses_index_list_.front().name] = &buses_index_list_.front();
 
 	for (const std::string_view stop_name : bus.stops) {
 		buses_on_stop_[stops_[stop_name]->name].insert(buses_index_list_.front().name);
+	}
+}
+
+void TransportCatalogue::AddDistance (std::string stop_name, const std::vector<std::pair<std::string, int>>& stop_names){
+	if (stop_names.empty()){
+		return;
+	}
+	std::string_view stop_name_at = stops_[stop_name]->name;
+	for (auto elem: stop_names){
+		std::string_view stop_name_to = stops_[elem.first]->name;
+		route_lengths_[{stop_name_at, stop_name_to}] = elem.second;
+		route_lengths_by_coords_[{stop_name_at, stop_name_to}] = geo::ComputeDistance(
+																stops_[stop_name_at]->coordinates,
+																stops_[stop_name_to]->coordinates);
 	}
 }
 
@@ -30,27 +44,37 @@ TransportCatalogue::BusInfo TransportCatalogue::GetBusInfo(const std::string_vie
 	} catch (...){
 		return {0, 0, 0};
 	}
+
+	double curvature = bus.route_length / ComputeRouteDistanceByCoords(bus.stops);
 	
 	size_t uniq_stops_count = std::unordered_set(bus.stops.begin(), bus.stops.end()).size();
 	
-	return {bus.stops.size(), uniq_stops_count, bus.route_length};
+	return {bus.stops.size(), uniq_stops_count, bus.route_length, curvature};
 }
 
-double TransportCatalogue::ComputeRouteDistance(const std::vector<std::string_view>& stops_on_route) {
+double TransportCatalogue::ComputeRouteDistanceByCoords(const std::vector<std::string_view>& stops_on_route) const {
 	double route_length = 0;
-	double length_between_two_stops = 0;
-
 	for (size_t pos = 1; pos < stops_on_route.size(); ++pos) {
 		try {
-			length_between_two_stops = route_lengths_.at({ stops_on_route[pos - 1], stops_on_route[pos] });
+			route_length += route_lengths_by_coords_.at({ stops_on_route[pos - 1], stops_on_route[pos] });
 		}
 		catch (...) {
-			length_between_two_stops = geo::ComputeDistance(
-				(stops_.at(stops_on_route[pos - 1]))->coordinates,
-				(stops_.at(stops_on_route[pos]))->coordinates);
-			route_lengths_[{ stops_on_route[pos - 1], stops_on_route[pos] }] = length_between_two_stops;
+			route_length += route_lengths_by_coords_.at({ stops_on_route[pos], stops_on_route[pos - 1] });
 		}
-		route_length += length_between_two_stops;
+	}
+
+	return route_length;
+}
+
+int TransportCatalogue::ComputeRouteDistance(const std::vector<std::string_view>& stops_on_route) const{
+	int route_length = 0;
+	for (size_t pos = 1; pos < stops_on_route.size(); ++pos) {
+		try {
+			route_length += route_lengths_.at({ stops_on_route[pos - 1], stops_on_route[pos] });
+		}
+		catch (...) {
+			route_length += route_lengths_.at({ stops_on_route[pos], stops_on_route[pos - 1]});
+		}
 	}
 
 	return route_length;

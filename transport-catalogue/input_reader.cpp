@@ -19,12 +19,43 @@ geo::Coordinates ParseCoordinates(std::string_view str) {
         return {nan, nan};
     }
 
+    auto comma2 = str.find(',', comma + 1);
+    if (comma2 != str.npos){
+        str = str.substr(not_space, comma2);
+    }
+
+    not_space = str.find_first_not_of(' ');
+    comma = str.find(',');
+
     auto not_space2 = str.find_first_not_of(' ', comma + 1);
 
     double lat = std::stod(std::string(str.substr(not_space, comma - not_space)));
     double lng = std::stod(std::string(str.substr(not_space2)));
 
     return {lat, lng};
+}
+
+/*
+    Парсит строку вида 3900m stop_1, 2100m stop_2, ...
+    и возвращает вектор пар (название остановки, расстояние)
+*/
+std::vector<std::pair<std::string, int>> ParseDistances(std::string_view str){
+    auto comma = str.find(',');
+    auto comma2 = str.find(',', comma + 1);
+    if (comma2 != str.npos){
+        str = str.substr(comma2 + 1);
+    } else {
+        return {};
+    }
+    std::vector<std::pair<std::string, int>> result;
+    for (auto elem: Split(str, ',')){
+        auto trim_str = Trim(elem);
+        auto meter_literal = trim_str.find('m');
+        result.push_back({
+            std::string(trim_str.substr(meter_literal + 5)),
+            std::stoi(std::string(trim_str.substr(0, meter_literal)))});
+    }
+    return result;
 }
 
 /**
@@ -113,6 +144,14 @@ void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) 
     for (const auto& command : commands_) {
         if (command.command == "Stop"s) {
             catalogue.AddStop({command.id, ParseCoordinates(command.description)});
+        } else {
+            break;
+        }
+    }
+
+    for (const auto& command : commands_) {
+        if (command.command == "Stop"s) {
+            catalogue.AddDistance(command.id, ParseDistances(command.description));
         } else {
             catalogue.AddBus({command.id, ParseRoute(command.description)});
         }
