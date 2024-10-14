@@ -39,7 +39,7 @@ geo::Coordinates ParseCoordinates(std::string_view str) {
     Парсит строку вида 3900m stop_1, 2100m stop_2, ...
     и возвращает вектор пар (название остановки, расстояние)
 */
-std::vector<std::pair<std::string, int>> ParseDistances(std::string_view str){
+std::vector<std::pair<std::string_view, int>> ParseDistances(std::string_view str){
     auto comma = str.find(',');
     auto comma2 = str.find(',', comma + 1);
     if (comma2 != str.npos){
@@ -47,12 +47,12 @@ std::vector<std::pair<std::string, int>> ParseDistances(std::string_view str){
     } else {
         return {};
     }
-    std::vector<std::pair<std::string, int>> result;
+    std::vector<std::pair<std::string_view, int>> result;
     for (auto elem: Split(str, ',')){
         auto trim_str = Trim(elem);
         auto meter_literal = trim_str.find('m');
         result.push_back({
-            std::string(trim_str.substr(meter_literal + 5)),
+            trim_str.substr(meter_literal + 5),
             std::stoi(std::string(trim_str.substr(0, meter_literal)))});
     }
     return result;

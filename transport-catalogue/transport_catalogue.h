@@ -13,19 +13,15 @@
 
 class TransportCatalogue {
 
-	//Хэшер пары string_view через хэш конкатенации string
 	struct PairHash {
-		std::size_t operator()(std::pair<std::string_view, std::string_view> pair) const {
-			return std::hash<std::string>()(std::string(pair.first) + std::string(pair.second));
-		}
+		std::size_t operator()(
+			std::pair<std::string_view, std::string_view> pair) const;
 	};
 
 	struct PairEqual {
 		std::size_t operator()(
 			std::pair<std::string_view, std::string_view> lhs,
-			std::pair<std::string_view, std::string_view> rhs) const {
-			return lhs == rhs;
-		}
+			std::pair<std::string_view, std::string_view> rhs) const;
 	};
 
 	struct Stop{
@@ -49,7 +45,8 @@ class TransportCatalogue {
 public:
 	void AddStop(const Stop& stop);
 	void AddBus(const Bus& bus);
-	void AddDistance (std::string stop_name, const std::vector<std::pair<std::string, int>>& stop_names);
+	void AddDistance(std::string_view stop_name, const std::vector<std::pair<std::string_view, int>>& stop_names);
+	int GetDistance(std::string_view from_stop_name, std::string_view to_stop_name) const;
 	BusInfo GetBusInfo(const std::string_view bus_name) const;
 	const Stop* FindStop(const std::string_view stop_name) const;
 	std::set<std::string_view> GetBusesOnStop(const std::string_view stop_name) const;

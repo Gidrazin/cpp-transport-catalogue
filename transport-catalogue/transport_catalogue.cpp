@@ -3,6 +3,18 @@
 
 #include <stdexcept>
 
+
+std::size_t TransportCatalogue::PairHash::operator()(
+	std::pair<std::string_view, std::string_view> pair) const {
+	return std::hash<std::string>()(std::string(pair.first) + std::string(pair.second));
+}
+
+std::size_t TransportCatalogue::PairEqual::operator()(
+	std::pair<std::string_view, std::string_view> lhs,
+	std::pair<std::string_view, std::string_view> rhs) const {
+	return lhs == rhs;
+}
+
 void TransportCatalogue::AddStop(const Stop& stop) {
 	stops_index_list_.push_front(stop);
 	stops_[stops_index_list_.front().name] = &stops_index_list_.front();
@@ -23,11 +35,15 @@ void TransportCatalogue::AddBus(const Bus& bus) {
 	}
 }
 
-void TransportCatalogue::AddDistance (std::string stop_name, const std::vector<std::pair<std::string, int>>& stop_names){
+void TransportCatalogue::AddDistance (std::string_view stop_name, const std::vector<std::pair<std::string_view, int>>& stop_names){
 	if (stop_names.empty()){
 		return;
 	}
-	std::string_view stop_name_at = stops_[stop_name]->name;
+	auto it = stops_.find(stop_name);
+	if (it == stops_.end()){
+		return;
+	}
+	std::string_view stop_name_at = it->second->name;
 	for (auto elem: stop_names){
 		std::string_view stop_name_to = stops_[elem.first]->name;
 		route_lengths_[{stop_name_at, stop_name_to}] = elem.second;
@@ -35,6 +51,20 @@ void TransportCatalogue::AddDistance (std::string stop_name, const std::vector<s
 																stops_[stop_name_at]->coordinates,
 																stops_[stop_name_to]->coordinates);
 	}
+}
+
+int TransportCatalogue::GetDistance(std::string_view from_stop_name, std::string_view to_stop_name) const {
+	int distance;
+	try {
+		distance = route_lengths_.at({from_stop_name, to_stop_name});
+	} catch (...) {
+		try {
+			distance = route_lengths_.at({to_stop_name, from_stop_name});
+		} catch (...) {
+			return 0;
+		}
+	}
+	return distance;
 }
 
 TransportCatalogue::BusInfo TransportCatalogue::GetBusInfo(const std::string_view bus_name) const {
@@ -69,14 +99,8 @@ double TransportCatalogue::ComputeRouteDistanceByCoords(const std::vector<std::s
 int TransportCatalogue::ComputeRouteDistance(const std::vector<std::string_view>& stops_on_route) const{
 	int route_length = 0;
 	for (size_t pos = 1; pos < stops_on_route.size(); ++pos) {
-		try {
-			route_length += route_lengths_.at({ stops_on_route[pos - 1], stops_on_route[pos] });
-		}
-		catch (...) {
-			route_length += route_lengths_.at({ stops_on_route[pos], stops_on_route[pos - 1]});
-		}
+		route_length += GetDistance(stops_on_route[pos - 1], stops_on_route[pos]);
 	}
-
 	return route_length;
 }
 
