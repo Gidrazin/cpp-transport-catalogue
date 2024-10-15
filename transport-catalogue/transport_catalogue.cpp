@@ -54,17 +54,14 @@ void TransportCatalogue::AddDistance (std::string_view stop_name, const std::vec
 }
 
 int TransportCatalogue::GetDistance(std::string_view from_stop_name, std::string_view to_stop_name) const {
-	int distance;
-	try {
-		distance = route_lengths_.at({from_stop_name, to_stop_name});
-	} catch (...) {
-		try {
-			distance = route_lengths_.at({to_stop_name, from_stop_name});
-		} catch (...) {
+	auto it = route_lengths_.find({from_stop_name, to_stop_name});
+	if (it == route_lengths_.end()){
+		it = route_lengths_.find({to_stop_name, from_stop_name});
+		if (it == route_lengths_.end()) {
 			return 0;
 		}
 	}
-	return distance;
+	return it->second;
 }
 
 TransportCatalogue::BusInfo TransportCatalogue::GetBusInfo(const std::string_view bus_name) const {
