@@ -65,31 +65,25 @@ int TransportCatalogue::GetDistance(std::string_view from_stop_name, std::string
 }
 
 TransportCatalogue::BusInfo TransportCatalogue::GetBusInfo(const std::string_view bus_name) const {
-	Bus bus;
-	try {
-		bus = *buses_.at(bus_name);
-	} catch (...){
+	auto it = buses_.find(bus_name);
+	if (it == buses_.end()){
 		return {0, 0, 0};
 	}
-
+	Bus bus = *it->second;
 	double curvature = bus.route_length / ComputeRouteDistanceByCoords(bus.stops);
-	
 	size_t uniq_stops_count = std::unordered_set(bus.stops.begin(), bus.stops.end()).size();
-	
 	return {bus.stops.size(), uniq_stops_count, bus.route_length, curvature};
 }
 
 double TransportCatalogue::ComputeRouteDistanceByCoords(const std::vector<std::string_view>& stops_on_route) const {
 	double route_length = 0;
 	for (size_t pos = 1; pos < stops_on_route.size(); ++pos) {
-		try {
-			route_length += route_lengths_by_coords_.at({ stops_on_route[pos - 1], stops_on_route[pos] });
+		auto it = route_lengths_by_coords_.find({ stops_on_route[pos - 1], stops_on_route[pos] });
+		if (it == route_lengths_by_coords_.end()){
+			it = route_lengths_by_coords_.find({ stops_on_route[pos], stops_on_route[pos - 1] });
 		}
-		catch (...) {
-			route_length += route_lengths_by_coords_.at({ stops_on_route[pos], stops_on_route[pos - 1] });
-		}
+		route_length += it->second;
 	}
-
 	return route_length;
 }
 
@@ -102,19 +96,17 @@ int TransportCatalogue::ComputeRouteDistance(const std::vector<std::string_view>
 }
 
 const TransportCatalogue::Stop* TransportCatalogue::FindStop(const std::string_view stop_name) const {
-	try {
-		return stops_.at(stop_name);
-	}
-	catch (...) {
+	auto it = stops_.find(stop_name);
+	if (it == stops_.end()){
 		return nullptr;
 	}
+	return it->second;
 }
 
 std::set<std::string_view> TransportCatalogue::GetBusesOnStop(const std::string_view stop_name) const {
-	try {
-		return buses_on_stop_.at(stop_name);
-	}
-	catch (...){
+	auto it = buses_on_stop_.find(stop_name);
+	if (it == buses_on_stop_.end()){
 		return {};
 	}
+	return it->second;
 }
