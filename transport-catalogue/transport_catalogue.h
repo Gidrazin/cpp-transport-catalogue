@@ -1,14 +1,15 @@
 #pragma once
 
 #include <forward_list>
+#include <map>
 #include <set>
 #include <string>
 #include <string_view>
-#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
+#include "domain.h"
 #include "geo.h"
 
 class TransportCatalogue {
@@ -24,24 +25,6 @@ class TransportCatalogue {
 			std::pair<std::string_view, std::string_view> rhs) const;
 	};
 
-	struct Stop{
-		std::string name;
-		geo::Coordinates coordinates;
-	};
-
-	struct Bus {
-		std::string name;
-		std::vector<std::string_view> stops;
-		int route_length = 0;
-	};
-
-	struct BusInfo{
-		size_t stops_on_route = 0;
-		size_t unique_stops = 0;
-		int route_length = 0;
-		double curvature = 0;
-	};
-
 public:
 	void AddStop(const Stop& stop);
 	void AddBus(const Bus& bus);
@@ -50,6 +33,8 @@ public:
 	BusInfo GetBusInfo(const std::string_view bus_name) const;
 	const Stop* FindStop(const std::string_view stop_name) const;
 	std::set<std::string_view> GetBusesOnStop(const std::string_view stop_name) const;
+	const std::map<std::string_view, const Bus*> GetBuses() const;
+
 
 private:
 

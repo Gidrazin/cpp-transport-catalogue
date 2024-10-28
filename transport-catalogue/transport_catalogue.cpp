@@ -1,7 +1,8 @@
-#include "transport_catalogue.h"
-#include "geo.h"
-
 #include <stdexcept>
+
+#include "domain.h"
+#include "geo.h"
+#include "transport_catalogue.h"
 
 
 std::size_t TransportCatalogue::PairHash::operator()(
@@ -27,7 +28,7 @@ void TransportCatalogue::AddBus(const Bus& bus) {
 		sv_stop_names.push_back(stops_[stop_name]->name);
 	}
 	int route_length = ComputeRouteDistance(sv_stop_names);
-	buses_index_list_.push_front({bus.name, move(sv_stop_names), route_length});
+	buses_index_list_.push_front({bus.name, move(sv_stop_names), route_length, bus.is_circle});
 	buses_[buses_index_list_.front().name] = &buses_index_list_.front();
 
 	for (const std::string_view stop_name : bus.stops) {
@@ -64,7 +65,7 @@ int TransportCatalogue::GetDistance(std::string_view from_stop_name, std::string
 	return it->second;
 }
 
-TransportCatalogue::BusInfo TransportCatalogue::GetBusInfo(const std::string_view bus_name) const {
+BusInfo TransportCatalogue::GetBusInfo(const std::string_view bus_name) const {
 	auto it = buses_.find(bus_name);
 	if (it == buses_.end()){
 		return {0, 0, 0};
@@ -95,7 +96,7 @@ int TransportCatalogue::ComputeRouteDistance(const std::vector<std::string_view>
 	return route_length;
 }
 
-const TransportCatalogue::Stop* TransportCatalogue::FindStop(const std::string_view stop_name) const {
+const Stop* TransportCatalogue::FindStop(const std::string_view stop_name) const {
 	auto it = stops_.find(stop_name);
 	if (it == stops_.end()){
 		return nullptr;
@@ -109,4 +110,9 @@ std::set<std::string_view> TransportCatalogue::GetBusesOnStop(const std::string_
 		return {};
 	}
 	return it->second;
+}
+
+const std::map<std::string_view, const Bus*> TransportCatalogue::GetBuses() const {
+	std::map<std::string_view, const Bus*> buses(buses_.begin(), buses_.end());
+	return buses;
 }

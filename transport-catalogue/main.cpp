@@ -1,32 +1,18 @@
 #include <iostream>
+#include <sstream>
 #include <string>
 
-#include "input_reader.h"
-#include "stat_reader.h"
-
-using namespace std;
+#include "json_reader.h"
+#include "map_renderer.h"
+#include "request_handler.h"
 
 int main() {
-    TransportCatalogue catalogue;
-
-    int base_request_count;
-    cin >> base_request_count >> ws;
-
-    {
-        InputReader reader;
-        for (int i = 0; i < base_request_count; ++i) {
-            string line;
-            getline(cin, line);
-            reader.ParseLine(line);
-        }
-        reader.ApplyCommands(catalogue);
-    }
-
-    int stat_request_count;
-    cin >> stat_request_count >> ws;
-    for (int i = 0; i < stat_request_count; ++i) {
-        string line;
-        getline(cin, line);
-        ParseAndPrintStat(catalogue, line, cout);
-    }
+    json::JsonReader json_reader(std::cin); //Превращаем json из потока ввода в document_
+    json_reader.MakeDB(); //Заполняем базу транспортного каталога
+    renderer::MapRenderer map_renderer(json_reader.ParseRenderSettings()); //Применяем настройки отрисовки
+    StatRequestHandler handler(json_reader.GetDB(), map_renderer); //Создаем обработчик запросов
+    auto map = handler.RenderMap(); //Обработчик генерирует карту
+    std::ostringstream map_output;
+    map.Render(map_output); //Отрисовка карты и вывод в строковый поток
+    json_reader.PrintJson(std::cout, map_output.str()); //Формирование выходного json документа с картой
 }
