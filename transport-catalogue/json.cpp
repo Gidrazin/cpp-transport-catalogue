@@ -243,29 +243,19 @@ Node LoadNode(istream& input) {
 
 //-------------------NODE--------------------
 
+const Node::Value& Node::GetValue() const { return *this; }
 
-Node::Node(Value value):value_(value) {}
-Node::Node(std::nullptr_t ptr): value_(ptr) {}
-Node::Node(const Array& array) :value_(std::move(array)) {}
-Node::Node(bool boolean): value_(boolean) {}
-Node::Node(const Dict& dict): value_(std::move(dict)) {}
-Node::Node(double number): value_(number) {}
-Node::Node(int integer_number): value_(integer_number) {}
-Node::Node(const std::string& str): value_(std::move(str)) {}
+bool Node::IsNull() const { return std::holds_alternative<std::nullptr_t>(*this); }
+bool Node::IsBool() const { return std::holds_alternative<bool>(*this); }
+bool Node::IsInt() const { return std::holds_alternative<int>(*this); }
+bool Node::IsDouble() const { return this->IsInt() || std::holds_alternative<double>(*this); }
+bool Node::IsPureDouble() const { return std::holds_alternative<double>(*this); }
+bool Node::IsString() const { return std::holds_alternative<std::string>(*this); }
+bool Node::IsArray() const { return std::holds_alternative<Array>(*this); }
+bool Node::IsMap() const { return std::holds_alternative<Dict>(*this); }
 
-const Value& Node::GetValue() const { return value_; }
-
-bool Node::IsNull() const { return std::holds_alternative<std::nullptr_t>(value_); }
-bool Node::IsBool() const { return std::holds_alternative<bool>(value_); }
-bool Node::IsInt() const { return std::holds_alternative<int>(value_); }
-bool Node::IsDouble() const { return this->IsInt() || std::holds_alternative<double>(value_); }
-bool Node::IsPureDouble() const { return std::holds_alternative<double>(value_); }
-bool Node::IsString() const { return std::holds_alternative<std::string>(value_); }
-bool Node::IsArray() const { return std::holds_alternative<Array>(value_); }
-bool Node::IsMap() const { return std::holds_alternative<Dict>(value_); }
-
-bool Node::operator==(const Node& other) const { return this->value_ == other.GetValue(); }
-bool Node::operator!=(const Node& other) const { return !(this->value_ == other.GetValue()); }
+bool Node::operator==(const Node& other) const { return *this == other.GetValue(); }
+bool Node::operator!=(const Node& other) const { return !(*this == other.GetValue()); }
 
 
 int Node::AsInt() const {

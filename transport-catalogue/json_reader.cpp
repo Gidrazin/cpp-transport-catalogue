@@ -38,15 +38,11 @@ JsonReader::JsonReader(std::istream& in)
 : document_(Load(in).GetRoot().AsMap())
 {}
 
-void JsonReader::MakeDB() {
+
+const TransportCatalogue& JsonReader::GetDB() {
     AddStops(document_["base_requests"s].AsArray());
     AddDistances(document_["base_requests"s].AsArray());
     AddBuses(document_["base_requests"s].AsArray());
-    //ParseRenderSettings(document_["render_settings"s].AsMap());
-    //PrintJson(requests["stat_requests"s].AsArray(), out);
-}
-
-const TransportCatalogue& JsonReader::GetDB() const {
     return db_;
 }
 

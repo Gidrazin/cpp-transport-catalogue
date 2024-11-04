@@ -11,9 +11,8 @@ namespace json {
 class JsonReader {
 public:
     explicit JsonReader(std::istream& in);
-    void MakeDB();
     renderer::RenderSettings ParseRenderSettings() const;
-    const TransportCatalogue& GetDB() const;
+    const TransportCatalogue& GetDB();
     void PrintJson(std::ostream& out, const std::string& map) const;
 
 private:

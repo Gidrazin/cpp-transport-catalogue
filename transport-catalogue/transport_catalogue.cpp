@@ -68,7 +68,7 @@ int TransportCatalogue::GetDistance(std::string_view from_stop_name, std::string
 BusInfo TransportCatalogue::GetBusInfo(const std::string_view bus_name) const {
 	auto it = buses_.find(bus_name);
 	if (it == buses_.end()){
-		return {0, 0, 0};
+		return {0, 0, 0, 0};
 	}
 	Bus bus = *it->second;
 	double curvature = bus.route_length / ComputeRouteDistanceByCoords(bus.stops);

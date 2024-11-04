@@ -2,12 +2,14 @@
 
 #include <algorithm>
 #include <array>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "geo.h"
 #include "domain.h"
 #include "svg.h"
+#include "transport_catalogue.h"
 
 using namespace std::literals;
 
@@ -107,9 +109,13 @@ class MapRenderer {
 public:
     explicit MapRenderer(RenderSettings&&);
     std::vector<svg::Point> MakeCoords(const std::vector<geo::Coordinates>& coords, const SphereProjector& proj) const;
-    const RenderSettings& GetSettings() const;
+    void SetProj(const TransportCatalogue& db); //Создание переводчика координат
+    void DrawLines(svg::Document& document, const TransportCatalogue& db) const;
+    void DrawBusNames(svg::Document& document, const TransportCatalogue& db) const;
+    void DrawCircles(svg::Document& document, const TransportCatalogue& db) const;
 private:
     RenderSettings settings_;
+    std::optional<SphereProjector> proj_;
 };
 
 } //namespace renderer

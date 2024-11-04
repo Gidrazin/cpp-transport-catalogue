@@ -8,7 +8,6 @@
 
 int main() {
     json::JsonReader json_reader(std::cin); //Превращаем json из потока ввода в document_
-    json_reader.MakeDB(); //Заполняем базу транспортного каталога
     renderer::MapRenderer map_renderer(json_reader.ParseRenderSettings()); //Применяем настройки отрисовки
     StatRequestHandler handler(json_reader.GetDB(), map_renderer); //Создаем обработчик запросов
     auto map = handler.RenderMap(); //Обработчик генерирует карту

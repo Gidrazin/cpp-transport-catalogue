@@ -11,7 +11,6 @@ namespace json {
 class Node;
 using Dict = std::map<std::string, Node>;
 using Array = std::vector<Node>;
-using Value = std::variant<std::nullptr_t, Array, bool, Dict, double, int, std::string>;
 using Number = std::variant<int, double>;
 
 // Эта ошибка должна выбрасываться при ошибках парсинга JSON
@@ -20,18 +19,11 @@ public:
     using runtime_error::runtime_error;
 };
 
-class Node {
+class Node final : private std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string> {
 public:
 
-    Node() = default;
-    Node(Value value);
-    Node(std::nullptr_t ptr);
-    Node(const Array& array);
-    Node(bool boolean);
-    Node(const Dict& dict);
-    Node(double number);
-    Node(int integer_number);
-    Node(const std::string& str);
+    using variant::variant;
+    using Value = variant;
 
     const Value& GetValue() const;
 
@@ -54,8 +46,6 @@ public:
     bool operator==(const Node& other) const;
     bool operator!=(const Node& other) const;
 
-private:
-    Value value_;
 };
 
 // Контекст вывода, хранит ссылку на поток вывода и текущий отсуп
