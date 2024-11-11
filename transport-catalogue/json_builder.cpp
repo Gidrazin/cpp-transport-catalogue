@@ -5,14 +5,14 @@ using namespace std::literals;
 
 //----------------BUILDER-----------------
 
-KeyItemContext Builder::Key(std::string key){
+Builder::KeyItemContext Builder::Key(std::string key){
     if (!stack_.top()->IsMap() || key_.has_value()){
         throw std::logic_error("Expected NOT a key here!"s);
     }
     braces_.top().second = true;
     key_ = key;
     has_value_ = false;
-    return KeyItemContext(*this);
+    return {*this};
 }
 
 Builder& Builder::Value(Node::Value value){
@@ -39,7 +39,7 @@ Builder& Builder::Value(Node::Value value){
     return *this;
 }
 
-DictItemContext Builder::StartDict(){
+Builder::DictItemContext Builder::StartDict(){
     if (braces_.empty() && has_value_){
         throw std::logic_error("Expected NOT a Dict here!");
     }
@@ -64,10 +64,10 @@ DictItemContext Builder::StartDict(){
     }
     braces_.push({'{', false});
     has_value_ = true;
-    return DictItemContext(*this);
+    return {*this};
 }
 
-ArrayItemContext Builder::StartArray(){
+Builder::ArrayItemContext Builder::StartArray(){
     if (braces_.empty() && has_value_){
         throw std::logic_error("Expected NOT an Array here!");
     }
@@ -93,7 +93,7 @@ ArrayItemContext Builder::StartArray(){
 
     braces_.push({'[', false});
     has_value_ = false;
-    return ArrayItemContext(*this);
+    return {*this};
 }
 
 Builder& Builder::EndDict(){
@@ -126,54 +126,52 @@ Node Builder::Build(){
     return root_;
 }
 
-//----------------DICT_ITEM_CONTEXT-----------------
+//---------------BUILDER_ITEM_CONTEXT---------------
 
-DictItemContext::DictItemContext(Builder& builder)
+Builder::BuilderItemContext::BuilderItemContext(Builder& builder)
 : builder_(builder)
 {}
 
-KeyItemContext DictItemContext::Key(std::string key) {
-    return builder_.Key(key);
+Builder& Builder::BuilderItemContext::GetBuilder(){
+    return builder_;
+}
+//----------------DICT_ITEM_CONTEXT-----------------
+
+
+Builder::KeyItemContext Builder::DictItemContext::Key(std::string key) {
+    return GetBuilder().Key(key);
 }
 
-Builder& DictItemContext::EndDict() {
-    return builder_.EndDict();
+Builder& Builder::DictItemContext::EndDict() {
+    return GetBuilder().EndDict();
 }
 
 //-----------------KEY_ITEM_CONTEXT-----------------
 
-KeyItemContext::KeyItemContext(Builder& builder)
-: builder_(builder)
-{}
-
-DictItemContext KeyItemContext::Value(Node::Value value){
-    return builder_.Value(value);
+Builder::DictItemContext Builder::KeyItemContext::Value(Node::Value value){
+    return {GetBuilder().Value(value)};
 }
 
-DictItemContext KeyItemContext::StartDict(){
-    return builder_.StartDict();
+Builder::DictItemContext Builder::KeyItemContext::StartDict(){
+    return GetBuilder().StartDict();
 }
-ArrayItemContext KeyItemContext::StartArray(){
-    return builder_.StartArray();
+Builder::ArrayItemContext Builder::KeyItemContext::StartArray(){
+    return GetBuilder().StartArray();
 }
 
 //-----------------ARRAY_ITEM_CONTEXT-----------------
 
-ArrayItemContext::ArrayItemContext(Builder& builder)
-: builder_(builder)
-{}
-
-ArrayItemContext ArrayItemContext::Value(Node::Value value){
-    return builder_.Value(value);
+Builder::ArrayItemContext Builder::ArrayItemContext::Value(Node::Value value){
+    return {GetBuilder().Value(value)};
 }
-DictItemContext ArrayItemContext::StartDict(){
-    return builder_.StartDict();
+Builder::DictItemContext Builder::ArrayItemContext::StartDict(){
+    return GetBuilder().StartDict();
 }
-ArrayItemContext ArrayItemContext::StartArray(){
-    return builder_.StartArray();
+Builder::ArrayItemContext Builder::ArrayItemContext::StartArray(){
+    return GetBuilder().StartArray();
 }
-Builder& ArrayItemContext::EndArray(){
-    return builder_.EndArray();
+Builder& Builder::ArrayItemContext::EndArray(){
+    return GetBuilder().EndArray();
 }
 
 

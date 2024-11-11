@@ -33,4 +33,5 @@ const std::unordered_set<const Bus*> StatRequestHandler::GetBusesByStop(const st
     for (auto bus_name : db_.GetBusesOnStop(stop_name)){
         result.insert(buses.at(bus_name));
     }
+    return result;
 }
