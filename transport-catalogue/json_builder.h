@@ -9,8 +9,10 @@ namespace json {
 
 class Builder {
 
+	class BuilderItemContext;
 	class DictItemContext;
 	class ArrayItemContext;
+	class KeyItemContext;
 
 	class BuilderItemContext {
 	public:
