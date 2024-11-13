@@ -27,12 +27,21 @@ class Builder {
 		DictItemContext Value(Node::Value);
 		DictItemContext StartDict(); 
 		ArrayItemContext StartArray();
+		KeyItemContext Key(std::string) = delete;
+		Builder& EndDict() = delete;
+		Builder& EndArray() = delete;
+		Node Build()= delete;
 	};
 
 	class DictItemContext : public BuilderItemContext {
 	public:
 		KeyItemContext Key(std::string);
 		Builder& EndDict();
+		Builder& Value(Node::Value) = delete;
+		DictItemContext StartDict() = delete;
+		ArrayItemContext StartArray() = delete;
+		Builder& EndArray() = delete;
+		Node Build() = delete;
 	};
 
 	class ArrayItemContext : public BuilderItemContext {
@@ -41,6 +50,9 @@ class Builder {
 		DictItemContext StartDict(); 
 		ArrayItemContext StartArray();
 		Builder& EndArray();
+		KeyItemContext Key(std::string) = delete;
+		Builder& EndDict() = delete;
+		Node Build() = delete;
 	};
 
 public:
