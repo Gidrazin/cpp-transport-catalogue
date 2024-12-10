@@ -15,8 +15,12 @@
 class TransportCatalogue {
 
 	struct PairHash {
-		std::size_t operator()(
-			std::pair<std::string_view, std::string_view> pair) const;
+        template <typename T1, typename T2>
+		std::size_t operator()(const std::pair<T1, T2>& pair) const {
+            auto hash1 = std::hash<T1>{}(pair.first);
+            auto hash2 = std::hash<T2>{}(pair.second);
+            return hash1 ^ (hash2 << 1);
+        }
 	};
 
 	struct PairEqual {
@@ -34,6 +38,7 @@ public:
 	const Stop* FindStop(const std::string_view stop_name) const;
 	std::set<std::string_view> GetBusesOnStop(const std::string_view stop_name) const;
 	const std::map<std::string_view, const Bus*> GetBuses() const;
+	const std::forward_list<Stop>& GetStopsList() const;
 
 
 private:

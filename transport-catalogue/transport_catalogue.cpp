@@ -5,11 +5,6 @@
 #include "transport_catalogue.h"
 
 
-std::size_t TransportCatalogue::PairHash::operator()(
-	std::pair<std::string_view, std::string_view> pair) const {
-	return std::hash<std::string>()(std::string(pair.first) + std::string(pair.second));
-}
-
 std::size_t TransportCatalogue::PairEqual::operator()(
 	std::pair<std::string_view, std::string_view> lhs,
 	std::pair<std::string_view, std::string_view> rhs) const {
@@ -115,4 +110,8 @@ std::set<std::string_view> TransportCatalogue::GetBusesOnStop(const std::string_
 const std::map<std::string_view, const Bus*> TransportCatalogue::GetBuses() const {
 	std::map<std::string_view, const Bus*> buses(buses_.begin(), buses_.end());
 	return buses;
+}
+
+const std::forward_list<Stop>& TransportCatalogue::GetStopsList() const {
+	return stops_index_list_;
 }

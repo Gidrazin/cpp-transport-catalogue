@@ -20,6 +20,8 @@ public:
 
     svg::Document RenderMap() const;
 
+    size_t GetVertexCount() const;
+
 private:
     // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"
     const TransportCatalogue& db_;

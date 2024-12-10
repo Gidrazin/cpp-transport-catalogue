@@ -1,3 +1,4 @@
+#include <functional>
 
 #include "json_reader.h"
 #include "json_builder.h"
@@ -40,10 +41,14 @@ JsonReader::JsonReader(std::istream& in)
 {}
 
 
-const TransportCatalogue& JsonReader::GetDB() {
+const TransportCatalogue& JsonReader::MakeDB() {
     AddStops(document_["base_requests"s].AsArray());
     AddDistances(document_["base_requests"s].AsArray());
     AddBuses(document_["base_requests"s].AsArray());
+    return db_;
+}
+
+const TransportCatalogue& JsonReader::GetDB() const {
     return db_;
 }
 
@@ -111,50 +116,117 @@ renderer::RenderSettings JsonReader::ParseRenderSettings() const {
     return settings;
 }
 
-void JsonReader::PrintJson(std::ostream& out, const std::string& map) const{
+routing::RoutingSettings JsonReader::ParseRoutingSettings() const {
+    routing::RoutingSettings settings;
+    const Dict routing_settings = document_.at("routing_settings"s).AsMap();
+    settings.bus_wait_time = routing_settings.at("bus_wait_time").AsInt();
+    settings.bus_velocity = routing_settings.at("bus_velocity"s).AsInt();
+    return settings;
+}
+
+
+//Структура которая хранит ссылки на всё необходимое для отрисовки выходного JSON файла
+struct PrintJsonSource {
+    json::Builder& result;
+    const TransportCatalogue& db;
+    const json::Node& request;
+    const std::string& map;
+    const routing::TransportRouter& transport_router;
+};
+
+void StatRequestBus(PrintJsonSource source) {
+    auto [stops_count, unique_stops_count, route_length, curvature] = source.db.GetBusInfo(source.request.AsMap().at("name"s).AsString());
+    if (!stops_count) {
+        source.result.StartDict().
+            Key("request_id"s).Value(source.request.AsMap().at("id"s).AsInt()).
+            Key("error_message"s).Value("not found"s).
+            EndDict();
+    }
+    else {
+        source.result.StartDict().
+            Key("curvature"s).Value(curvature).
+            Key("request_id"s).Value(source.request.AsMap().at("id"s).AsInt()).
+            Key("route_length"s).Value(route_length).
+            Key("stop_count"s).Value(static_cast<int>(stops_count)).
+            Key("unique_stop_count"s).Value(static_cast<int>(unique_stops_count)).
+            EndDict();
+    }
+}
+
+void StatRequestStop(PrintJsonSource source) {
+    auto stop = source.db.FindStop(source.request.AsMap().at("name"s).AsString());
+    if (stop == nullptr) {
+        source.result.StartDict().
+            Key("request_id"s).Value(source.request.AsMap().at("id"s).AsInt()).
+            Key("error_message"s).Value("not found"s).
+            EndDict();
+        return;
+    }
+    auto buses_on_stop = source.db.GetBusesOnStop(source.request.AsMap().at("name"s).AsString());
+    json::Array buses;
+    for (auto bus : buses_on_stop) {
+        buses.emplace_back(std::string(bus));
+    }
+    source.result.StartDict().
+        Key("request_id"s).Value(source.request.AsMap().at("id"s).AsInt()).
+        Key("buses"s).Value(buses).
+        EndDict();
+}
+
+void StatRequestRoute(PrintJsonSource source){
+    std::string_view from = source.request.AsMap().at("from"s).AsString();
+    std::string_view to = source.request.AsMap().at("to"s).AsString();
+    std::pair<double, std::vector<std::variant<routing::TransportRouter::StopEdge, routing::TransportRouter::BusEdge>>> info =
+    source.transport_router.BuildRoute(from, to);
+    if (info.first == -1) { // если маршрута между указанными остановками нет
+        source.result.StartDict().
+            Key("request_id"s).Value(source.request.AsMap().at("id"s).AsInt()).
+            Key("error_message"s).Value("not found"s).
+            EndDict();
+        return;
+    }
+    source.result.StartDict().
+        Key("request_id"s).Value(source.request.AsMap().at("id"s).AsInt()).
+        Key("total_time"s).Value(info.first).
+        Key("items"s).StartArray();
+
+    for (const auto& item : info.second){
+        source.result.StartDict();
+        if (std::holds_alternative<routing::TransportRouter::StopEdge>(item)){
+            source.result.
+            Key("type"s).Value("Wait"s).
+            Key("stop_name"s).Value(std::string(std::get<routing::TransportRouter::StopEdge>(item).stop_name)).
+            Key("time"s).Value(std::get<routing::TransportRouter::StopEdge>(item).time);
+        } else {
+            source.result.
+            Key("type"s).Value("Bus"s).
+            Key("bus"s).Value(std::string(std::get<routing::TransportRouter::BusEdge>(item).bus)).
+            Key("span_count"s).Value(std::get<routing::TransportRouter::BusEdge>(item).span_count).
+            Key("time"s).Value(std::get<routing::TransportRouter::BusEdge>(item).time);
+        }
+        source.result.EndDict();
+    }
+    source.result.EndArray();
+    source.result.EndDict();
+}
+
+void StatRequestMap(PrintJsonSource source){
+    source.result.StartDict().
+    Key("request_id"s).Value(source.request.AsMap().at("id"s).AsInt()).
+    Key("map"s).Value(source.map).
+    EndDict();
+}
+
+void JsonReader::PrintJson(std::ostream& out, const routing::TransportRouter& transport_router, const std::string map) const{
     json::Builder result;
     result.StartArray();
+    std::unordered_map<std::string, std::function<void(PrintJsonSource)>> request_types;
+    request_types["Bus"s] = StatRequestBus;
+    request_types["Stop"s] = StatRequestStop;
+    request_types["Route"s] = StatRequestRoute;
+    request_types["Map"s] = StatRequestMap;
     for (const auto& request : document_.at("stat_requests"s).AsArray()) {
-        if (request.AsMap().at("type"s).AsString() == "Bus"s ){
-            auto [stops_count, unique_stops_count, route_length, curvature] = db_.GetBusInfo(request.AsMap().at("name"s).AsString());
-            if (!stops_count) {
-                result.StartDict().
-                Key("request_id"s).Value(request.AsMap().at("id"s).AsInt()).
-                Key("error_message"s).Value("not found"s).
-                EndDict();
-            } else {
-                result.StartDict().
-                Key("curvature"s).Value(curvature).
-                Key("request_id"s).Value(request.AsMap().at("id"s).AsInt()).
-                Key("route_length"s).Value(route_length).
-                Key("stop_count"s).Value(static_cast<int>(stops_count)).
-                Key("unique_stop_count"s).Value(static_cast<int>(unique_stops_count)).
-                EndDict();
-            }
-        } else if (request.AsMap().at("type"s).AsString() == "Stop"s ) {
-            auto stop = db_.FindStop(request.AsMap().at("name"s).AsString());
-            if (stop == nullptr){
-                result.StartDict().
-                Key("request_id"s).Value(request.AsMap().at("id"s).AsInt()).
-                Key("error_message"s).Value("not found"s).
-                EndDict();
-                continue;
-            }
-            auto buses_on_stop = db_.GetBusesOnStop(request.AsMap().at("name"s).AsString());
-            json::Array buses;
-            for (auto bus : buses_on_stop){
-                buses.emplace_back(std::string(bus));
-            }
-            result.StartDict().
-            Key("request_id"s).Value(request.AsMap().at("id"s).AsInt()).
-            Key("buses"s).Value(buses).
-            EndDict();
-        } else {
-            result.StartDict().
-            Key("request_id"s).Value(request.AsMap().at("id"s).AsInt()).
-            Key("map"s).Value(map).
-            EndDict();
-        }
+        request_types[request.AsMap().at("type"s).AsString()]({result, db_, request, map, transport_router});
     }
     result.EndArray();
     json::Document doc(result.Build());
