@@ -3,12 +3,13 @@
 
 namespace routing {
 
-TransportRouter::TransportRouter(const TransportCatalogue& db, const RoutingSettings& settings, size_t vertex_count)
+TransportRouter::TransportRouter(const TransportCatalogue& db, const RoutingSettings& settings)
 : settings_(settings)
-, graph_(vertex_count)
 , router_(std::nullopt)
 , db_(db)
-{
+{   
+    graph::DirectedWeightedGraph<double> tmp_graph(std::distance(db_.GetStopsList().begin(), db_.GetStopsList().end()) * 2);
+    graph_ = std::move(tmp_graph);
     AddStops();
     AddBuses();
     router_.emplace(graph::Router<double>(graph_));
@@ -41,7 +42,7 @@ void TransportRouter::AddBuses() {
     }
 }
 
-std::pair<double, std::vector<std::variant<TransportRouter::StopEdge, TransportRouter::BusEdge>>> TransportRouter::BuildRoute(std::string_view from, std::string_view to) const {
+std::pair<double, std::vector<std::variant<StopEdge, BusEdge>>> TransportRouter::BuildRoute(std::string_view from, std::string_view to) const {
     std::optional<graph::Router<double>::RouteInfo> route_info = router_.value().BuildRoute(stop_vertex_.at(from).begin, stop_vertex_.at(to).begin);
     if (!route_info.has_value()) {
         return {-1, {}};

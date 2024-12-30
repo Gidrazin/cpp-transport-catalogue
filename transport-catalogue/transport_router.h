@@ -18,24 +18,28 @@ struct RoutingSettings {
     int bus_velocity = 40;
 };
 
+struct StopEdge {
+    std::string_view stop_name;
+    int time;
+};
+
+struct BusEdge {
+    std::string_view bus;
+    int span_count;
+    double time;
+};
+
 class TransportRouter {
+public:
+
+    explicit TransportRouter(const TransportCatalogue& db, const RoutingSettings& settings);
+    std::pair<double, std::vector<std::variant<StopEdge, BusEdge>>> BuildRoute(std::string_view from, std::string_view to) const;
+
+private:
     struct StopVertex {
         graph::VertexId begin;
         graph::VertexId end;
     };
-public:
-    struct StopEdge {
-        std::string_view stop_name;
-        int time;
-    };
-    struct BusEdge {
-        std::string_view bus;
-        int span_count;
-        double time;
-    };
-    explicit TransportRouter(const TransportCatalogue& db, const RoutingSettings& settings, size_t vertex_count);
-    std::pair<double, std::vector<std::variant<StopEdge, BusEdge>>> BuildRoute(std::string_view from, std::string_view to) const;
-private:
 
     RoutingSettings settings_;
     graph::DirectedWeightedGraph<double> graph_;

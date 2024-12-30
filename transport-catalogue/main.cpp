@@ -12,7 +12,7 @@ int main() {
     renderer::MapRenderer map_renderer(json_reader.ParseRenderSettings()); //Применяем настройки отрисовки
     StatRequestHandler handler(json_reader.MakeDB(), map_renderer); //Создаем обработчик запросов
     routing::RoutingSettings routing_settings(json_reader.ParseRoutingSettings()); //Парсинг настроек маршрутов
-    routing::TransportRouter transport_router(json_reader.GetDB(), routing_settings, handler.GetVertexCount()); //Создание маршрутизатора
+    routing::TransportRouter transport_router(json_reader.GetDB(), routing_settings); //Создание маршрутизатора
     auto map = handler.RenderMap(); //Обработчик генерирует карту
     std::ostringstream map_output;
     map.Render(map_output); //Отрисовка карты и вывод в строковый поток

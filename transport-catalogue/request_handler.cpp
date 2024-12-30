@@ -35,7 +35,3 @@ const std::unordered_set<const Bus*> StatRequestHandler::GetBusesByStop(const st
     }
     return result;
 }
-
-size_t StatRequestHandler::GetVertexCount() const{
-    return std::distance(db_.GetStopsList().begin(), db_.GetStopsList().end()) * 2;
-}

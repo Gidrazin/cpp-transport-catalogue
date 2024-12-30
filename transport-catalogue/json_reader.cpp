@@ -176,8 +176,8 @@ void StatRequestStop(PrintJsonSource source) {
 void StatRequestRoute(PrintJsonSource source){
     std::string_view from = source.request.AsMap().at("from"s).AsString();
     std::string_view to = source.request.AsMap().at("to"s).AsString();
-    std::pair<double, std::vector<std::variant<routing::TransportRouter::StopEdge, routing::TransportRouter::BusEdge>>> info =
-    source.transport_router.BuildRoute(from, to);
+    std::pair<double, std::vector<std::variant<routing::StopEdge, routing::BusEdge>>> info =
+        source.transport_router.BuildRoute(from, to);
     if (info.first == -1) { // если маршрута между указанными остановками нет
         source.result.StartDict().
             Key("request_id"s).Value(source.request.AsMap().at("id"s).AsInt()).
@@ -192,17 +192,17 @@ void StatRequestRoute(PrintJsonSource source){
 
     for (const auto& item : info.second){
         source.result.StartDict();
-        if (std::holds_alternative<routing::TransportRouter::StopEdge>(item)){
+        if (std::holds_alternative<routing::StopEdge>(item)){
             source.result.
             Key("type"s).Value("Wait"s).
-            Key("stop_name"s).Value(std::string(std::get<routing::TransportRouter::StopEdge>(item).stop_name)).
-            Key("time"s).Value(std::get<routing::TransportRouter::StopEdge>(item).time);
+            Key("stop_name"s).Value(std::string(std::get<routing::StopEdge>(item).stop_name)).
+            Key("time"s).Value(std::get<routing::StopEdge>(item).time);
         } else {
             source.result.
             Key("type"s).Value("Bus"s).
-            Key("bus"s).Value(std::string(std::get<routing::TransportRouter::BusEdge>(item).bus)).
-            Key("span_count"s).Value(std::get<routing::TransportRouter::BusEdge>(item).span_count).
-            Key("time"s).Value(std::get<routing::TransportRouter::BusEdge>(item).time);
+            Key("bus"s).Value(std::string(std::get<routing::BusEdge>(item).bus)).
+            Key("span_count"s).Value(std::get<routing::BusEdge>(item).span_count).
+            Key("time"s).Value(std::get<routing::BusEdge>(item).time);
         }
         source.result.EndDict();
     }
